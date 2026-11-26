@@ -1,0 +1,38 @@
+name: CD
+
+# Continuous Delivery: package the app and create a GitHub Release
+# when a version tag (e.g. v1.0.0) is pushed.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run tests before release (gate)
+        run: python -m unittest -v
+
+      - name: Package app
+        run: |
+          mkdir -p dist
+          zip -r dist/playlist-${{ github.ref_name }}.zip playlist.py main.py test_playlist.py README.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
